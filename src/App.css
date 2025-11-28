@@ -1,0 +1,286 @@
+.gradient-bg {
+  background: radial-gradient(circle at top left, #ff00ff, #4b00ff 40%, #050018);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.min-h-screen {
+  min-height: 100vh;
+}
+
+.p-8 {
+  padding: 2rem;
+}
+
+.card {
+  background: rgba(12, 6, 40, 0.85);
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(18px);
+}
+
+.login-card {
+  width: 360px;
+  text-align: center;
+}
+
+.dashboard-card {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 1.6rem;
+  margin: 0 0 0.25rem;
+}
+
+.subtitle {
+  opacity: 0.9;
+  margin: 0;
+}
+
+.small {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.form {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.label {
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.input {
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-primary {
+  margin-top: 0.5rem;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(90deg, #5467ff, #ff2ad4);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-outline {
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  margin-top: 0.8rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(90deg, #5467ff, #ff2ad4);
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.hint {
+  font-size: 0.8rem;
+  margin-top: 0.7rem;
+}
+
+.link {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.error {
+  background: rgba(255, 0, 0, 0.18);
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+/* Dashboard */
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.4rem;
+  border-radius: 999px;
+}
+
+.tab {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.5rem 1.2rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.tab.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.dashboard-content {
+  margin-top: 0.5rem;
+}
+
+.section-title {
+  margin: 0 0 0.3rem;
+}
+
+.section-subtitle {
+  margin: 0 0 1.2rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+/* Grid simple */
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.grid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.election-card,
+.place-card,
+.stat-card,
+.candidate-card {
+  padding: 1.3rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.candidate-photo img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 16px;
+  margin-bottom: 0.7rem;
+}
+
+.chip {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  margin-bottom: 0.6rem;
+}
+
+.chip-success {
+  background: rgba(0, 255, 136, 0.28);
+}
+
+/* Estados de elecciones (puedes ajustar colores) */
+.status-Activa,
+.status-active {
+  background: rgba(0, 255, 136, 0.3);
+}
+
+.status-Programada,
+.status-scheduled {
+  background: rgba(255, 215, 0, 0.3);
+}
+
+.status-Finalizada,
+.status-finished {
+  background: rgba(255, 99, 132, 0.3);
+}
+
+/* Listas y tablas */
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.list-item-card {
+  padding: 1rem 1.2rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.empty-card {
+  padding: 2rem;
+  border-radius: 18px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.empty {
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th,
+.table td {
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+}
+
+.table thead {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
