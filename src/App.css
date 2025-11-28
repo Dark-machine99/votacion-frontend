@@ -284,3 +284,23 @@
 .table tbody tr:nth-child(even) {
   background: rgba(255, 255, 255, 0.03);
 }
+/* Modal básico (no modifica estilos existentes) */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 0, 30, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+}
+
+.modal {
+  background: rgba(12, 6, 40, 0.92);
+  border-radius: 24px;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+  max-width: 720px;
+  width: 100%;
+}
