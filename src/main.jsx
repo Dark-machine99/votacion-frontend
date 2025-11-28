@@ -1,14 +1,21 @@
+// src/main.jsx
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
-import "./index.css";   // <-- IMPORTANTE
-import "./App.css";     // <-- IMPORTANTE
+import "./index.css";
+import "./App.css";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <AuthProvider>
-      <App />
+      <BrowserRouter>
+        <App />
+        <ToastContainer position="bottom-center" />
+      </BrowserRouter>
     </AuthProvider>
   </React.StrictMode>
 );

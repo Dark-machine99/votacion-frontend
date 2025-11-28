@@ -2,16 +2,18 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { registerVoter } from "../api";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
-  const { login } = useAuth();
-  const [mode, setMode] = useState("login"); // "login" | "register"
+  const navigate = useNavigate();
+  const { login, loading: authLoading } = useAuth();
+
+  const [mode, setMode] = useState("login"); // login | register
+  const [error, setError] = useState("");
 
   // login
   const [email, setEmail] = useState("user@vota.com");
   const [password, setPassword] = useState("123456");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   // register
   const [rName, setRName] = useState("");
@@ -21,28 +23,34 @@ export default function Login() {
   async function handleLogin(e) {
     e.preventDefault();
     setError("");
-    setLoading(true);
+
     try {
-      await login(email, password);
+      const user = await login(email, password);
+
+      // 🔥 Redirección REAL
+      if (user.role === "admin") navigate("/admin");
+      else navigate("/votar");
+
     } catch (err) {
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
   }
 
   async function handleRegister(e) {
     e.preventDefault();
     setError("");
-    setLoading(true);
+
     try {
       await registerVoter(rName, rEmail, rPassword);
-      // autologin opcional
-      await login(rEmail, rPassword);
+
+      // Autologin
+      const user = await login(rEmail, rPassword);
+
+      // Redirección
+      navigate("/votar");
+
     } catch (err) {
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -52,10 +60,12 @@ export default function Login() {
         <h1 className="title" style={{ textAlign: "center" }}>
           Sistema de Votación
         </h1>
+
         <p className="subtitle" style={{ textAlign: "center", marginBottom: 16 }}>
           {mode === "login" ? "Accede a tu cuenta" : "Crear cuenta de votante"}
         </p>
 
+        {/* ---------- LOGIN ---------- */}
         {mode === "login" ? (
           <form onSubmit={handleLogin} className="form">
             <label className="label">
@@ -64,6 +74,7 @@ export default function Login() {
                 className="input"
                 type="email"
                 value={email}
+                placeholder="correo@ejemplo.com"
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
@@ -74,6 +85,7 @@ export default function Login() {
               <input
                 className="input"
                 type="password"
+                placeholder="••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -82,8 +94,8 @@ export default function Login() {
 
             {error && <div className="error">{error}</div>}
 
-            <button className="btn-primary" type="submit" disabled={loading}>
-              {loading ? "Ingresando..." : "Iniciar Sesión"}
+            <button className="btn-primary" type="submit" disabled={authLoading}>
+              {authLoading ? "Ingresando..." : "Iniciar Sesión"}
             </button>
 
             <p className="hint" style={{ textAlign: "center" }}>
@@ -94,11 +106,13 @@ export default function Login() {
             </p>
           </form>
         ) : (
+          /* ---------- REGISTER ---------- */
           <form onSubmit={handleRegister} className="form">
             <label className="label">
               Nombre completo
               <input
                 className="input"
+                placeholder="Tu nombre"
                 value={rName}
                 onChange={(e) => setRName(e.target.value)}
                 required
@@ -110,6 +124,7 @@ export default function Login() {
               <input
                 className="input"
                 type="email"
+                placeholder="correo@ejemplo.com"
                 value={rEmail}
                 onChange={(e) => setREmail(e.target.value)}
                 required
@@ -121,6 +136,7 @@ export default function Login() {
               <input
                 className="input"
                 type="password"
+                placeholder="••••••"
                 value={rPassword}
                 onChange={(e) => setRPassword(e.target.value)}
                 required
@@ -129,8 +145,8 @@ export default function Login() {
 
             {error && <div className="error">{error}</div>}
 
-            <button className="btn-primary" type="submit" disabled={loading}>
-              {loading ? "Creando..." : "Crear cuenta"}
+            <button className="btn-primary" type="submit" disabled={authLoading}>
+              {authLoading ? "Creando..." : "Crear cuenta"}
             </button>
 
             <p className="hint" style={{ textAlign: "center" }}>

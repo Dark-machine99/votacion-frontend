@@ -1,304 +1,280 @@
 // src/pages/AdminDashboard.jsx
-import { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
+import MainLayout from "../components/layout/MainLayout";
+import StatsCards from "../components/admin/StatsCards";
 import {
   getAdminDashboard,
   getAdminElections,
+  getAdminCandidates,
+  getAdminUsers,
+  getAdminAudit,
   createElection,
   updateElection,
   deleteElection,
-  getAdminCandidates,
   createCandidate,
   updateCandidate,
   deleteCandidate,
-  getAdminUsers,
-  getAdminAudit,
+  setUserStatus,
 } from "../api";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth();
   const [tab, setTab] = useState("dashboard");
-  const [stats, setStats] = useState(null);
+
+  const [stats, setStats] = useState({ totalUsers: 0, totalElections: 0, totalVotes: 0, participation: 0 });
   const [elections, setElections] = useState([]);
   const [candidates, setCandidates] = useState([]);
   const [users, setUsers] = useState([]);
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [audit, setAudit] = useState([]);
 
-  // modales
-  const [electionModal, setElectionModal] = useState(null); // {mode:'create'|'edit', values:{...}}
-  const [candidateModal, setCandidateModal] = useState(null); // {mode, values}
+  const [modalElection, setModalElection] = useState(null); // {mode:'create'|'edit', data:{}}
+  const [modalCandidate, setModalCandidate] = useState(null);
 
-  async function refresh() {
+  const refresh = async () => {
+    const [s, es, cs, us, au] = await Promise.all([
+      getAdminDashboard(), getAdminElections(), getAdminCandidates(), getAdminUsers(), getAdminAudit()
+    ]);
+    setStats(s); setElections(es); setCandidates(cs); setUsers(us); setAudit(au);
+  };
+
+  useEffect(() => { refresh(); }, []);
+
+  const votesDistribution = useMemo(() => {
+    const labels = elections.map(e => e.title.slice(0,16));
+    const data = elections.map(e => (e.status === "Activa" ? 1 : e.status === "Programada" ? .5 : 0));
+    return { labels, data };
+  }, [elections]);
+
+  const submitElection = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const payload = Object.fromEntries(fd.entries());
     try {
-      setLoading(true);
-      if (tab === "dashboard") {
-        setStats(await getAdminDashboard());
-      } else if (tab === "elections") {
-        setElections(await getAdminElections());
-      } else if (tab === "candidates") {
-        setCandidates(await getAdminCandidates());
-      } else if (tab === "users") {
-        setUsers(await getAdminUsers());
-      } else if (tab === "audit") {
-        setLogs(await getAdminAudit());
+      if (modalElection.mode === "create") {
+        await createElection(payload);
+        toast.success("Elección creada");
+      } else {
+        await updateElection(modalElection.data.id, payload);
+        toast.success("Elección actualizada");
       }
+      setModalElection(null);
+      refresh();
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      toast.error(err.message);
     }
-  }
-  useEffect(() => { refresh(); }, [tab]);
+  };
 
-  async function saveElection(values) {
-    if (electionModal?.mode === "create") {
-      await createElection(values);
-    } else {
-      await updateElection(electionModal.values.id, values);
-    }
-    setElectionModal(null);
+  const removeElection = async (id) => {
+    if (!confirm("¿Eliminar elección?")) return;
+    await deleteElection(id);
+    toast.success("Elección eliminada");
     refresh();
-  }
+  };
 
-  async function saveCandidate(values) {
-    if (candidateModal?.mode === "create") {
-      await createCandidate(values);
-    } else {
-      await updateCandidate(candidateModal.values.id, values);
+  const submitCandidate = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const payload = Object.fromEntries(fd.entries());
+    payload.election_id = Number(payload.election_id);
+    try {
+      if (modalCandidate.mode === "create") {
+        await createCandidate(payload);
+        toast.success("Candidato creado");
+      } else {
+        await updateCandidate(modalCandidate.data.id, payload);
+        toast.success("Candidato actualizado");
+      }
+      setModalCandidate(null);
+      refresh();
+    } catch (err) {
+      toast.error(err.message);
     }
-    setCandidateModal(null);
+  };
+
+  const removeCandidate = async (id) => {
+    if (!confirm("¿Eliminar candidato?")) return;
+    await deleteCandidate(id);
+    toast.success("Candidato eliminado");
     refresh();
-  }
+  };
+
+  const toggleUser = async (u) => {
+    await setUserStatus(u.id, !u.active);
+    toast.success("Estado actualizado");
+    refresh();
+  };
 
   return (
-    <div className="gradient-bg min-h-screen p-8">
-      <div className="card dashboard-card">
-        <header className="dashboard-header">
-          <div>
-            <p className="subtitle">Panel de Administración</p>
-            <h2 className="title">{user?.name || "Administrador"}</h2>
-            <p className="small">Bienvenido, Administrador</p>
+    <MainLayout title="Panel de Administración">
+      <div className="tabs">
+        <button className={`tab ${tab === "dashboard" ? "active" : ""}`} onClick={() => setTab("dashboard")}>Dashboard</button>
+        <button className={`tab ${tab === "elections" ? "active" : ""}`} onClick={() => setTab("elections")}>Votaciones</button>
+        <button className={`tab ${tab === "candidates" ? "active" : ""}`} onClick={() => setTab("candidates")}>Candidatos</button>
+        <button className={`tab ${tab === "users" ? "active" : ""}`} onClick={() => setTab("users")}>Usuarios</button>
+        <button className={`tab ${tab === "audit" ? "active" : ""}`} onClick={() => setTab("audit")}>Auditoría</button>
+      </div>
+
+      {tab === "dashboard" && (
+        <>
+          <StatsCards stats={stats} elections={elections} votesDistribution={votesDistribution} />
+          <div className="empty-card" style={{ marginTop: "1rem" }}>
+            <p className="small">Sistema en vivo — los datos se actualizan automáticamente</p>
           </div>
-          <button className="btn-outline" onClick={logout}>Cerrar sesión</button>
-        </header>
+        </>
+      )}
 
-        <nav className="tabs">
-          {["dashboard","elections","candidates","users","audit"].map((t)=>(
-            <button key={t} className={`tab ${tab===t?"active":""}`} onClick={()=>setTab(t)}>
-              {t==="dashboard"?"Dashboard":t==="elections"?"Votaciones":t==="candidates"?"Candidatos":t==="users"?"Usuarios":"Auditoría"}
+      {tab === "elections" && (
+        <>
+          <div className="dashboard-header">
+            <div>
+              <h3 className="section-title">Gestión de Votaciones</h3>
+              <p className="section-subtitle">Administra las votaciones del sistema</p>
+            </div>
+            <button className="btn-primary" onClick={() => setModalElection({ mode: "create", data: {} })}>
+              Nueva Votación
             </button>
-          ))}
-        </nav>
+          </div>
 
-        <main className="dashboard-content">
-          {loading && <p className="small">Cargando...</p>}
-
-          {/* DASHBOARD */}
-          {tab==="dashboard" && stats && (
-            <>
-              <h3 className="section-title">Dashboard de Estadísticas</h3>
-              <div className="grid grid-4">
-                <div className="card stat-card"><p className="small">Total Usuarios</p><h2>{stats.totalUsers}</h2></div>
-                <div className="card stat-card"><p className="small">Votaciones</p><h2>{stats.totalElections}</h2></div>
-                <div className="card stat-card"><p className="small">Votos Emitidos</p><h2>{stats.totalVotes}</h2></div>
-                <div className="card stat-card"><p className="small">Participación</p><h2>{Number(stats.participation||0).toFixed(1)}%</h2></div>
-              </div>
-            </>
-          )}
-
-          {/* ELECCIONES */}
-          {tab==="elections" && !loading && (
-            <>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <h3 className="section-title">Gestión de Votaciones</h3>
-                <button className="btn-primary" onClick={()=>setElectionModal({mode:"create",values:{title:"",description:"",start_date:"",end_date:"",status:"Programada"}})}>
-                  Nueva Votación
-                </button>
-              </div>
-              <ul className="list">
-                {elections.map((e)=>(
-                  <li key={e.id} className="list-item list-item-card">
-                    <div>
-                      <strong>{e.title}</strong>
-                      <p className="small">{e.description}</p>
-                      <p className="small">{new Date(e.start_date).toLocaleDateString()} - {new Date(e.end_date).toLocaleDateString()}</p>
-                    </div>
-                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                      <span className={`chip status-${e.status}`}>{e.status}</span>
-                      <button className="btn-outline" onClick={()=>setElectionModal({mode:"edit",values:e})}>Editar</button>
-                      <button className="btn-outline" onClick={async()=>{ if(confirm("¿Eliminar votación?")){ await deleteElection(e.id); refresh(); } }}>Eliminar</button>
-                    </div>
-                  </li>
-                ))}
-                {elections.length===0 && <p className="empty">No hay votaciones configuradas.</p>}
-              </ul>
-            </>
-          )}
-
-          {/* CANDIDATOS */}
-          {tab==="candidates" && !loading && (
-            <>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <h3 className="section-title">Gestión de Candidatos</h3>
-                <button className="btn-primary" onClick={()=>setCandidateModal({mode:"create",values:{election_id:"",name:"",party:"",bio:"",photo_url:""}})}>
-                  Nuevo Candidato
-                </button>
-              </div>
-              <div className="grid">
-                {candidates.map((c)=>(
-                  <div key={c.id} className="card candidate-card">
-                    {c.photo_url && <div className="candidate-photo"><img src={c.photo_url} alt={c.name}/></div>}
-                    <h4>{c.name}</h4>
-                    <p className="small">{c.party}</p>
-                    <p className="small">{c.bio}</p>
-                    <p className="small">Elección: {c.election_title || c.election_id}</p>
-                    <div style={{display:"flex",gap:8,marginTop:8}}>
-                      <button className="btn-outline" onClick={()=>setCandidateModal({mode:"edit",values:c})}>Editar</button>
-                      <button className="btn-outline" onClick={async()=>{ if(confirm("¿Eliminar candidato?")){ await deleteCandidate(c.id); refresh(); }}}>Eliminar</button>
-                    </div>
-                  </div>
-                ))}
-                {candidates.length===0 && <p className="empty">No hay candidatos.</p>}
-              </div>
-            </>
-          )}
-
-          {/* USUARIOS */}
-          {tab==="users" && !loading && (
-            <>
-              <h3 className="section-title">Gestión de Usuarios</h3>
-              {users.length===0 ? <p className="empty">No hay usuarios.</p> : (
-                <table className="table">
-                  <thead><tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Estado</th></tr></thead>
-                  <tbody>
-                    {users.map((u)=>(
-                      <tr key={u.id}><td>{u.name}</td><td>{u.email}</td><td>{u.role}</td><td>{u.active?"Activo":"Inactivo"}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </>
-          )}
-
-          {/* AUDITORÍA */}
-          {tab==="audit" && !loading && (
-            <>
-              <h3 className="section-title">Registro de Auditoría</h3>
-              <ul className="list">
-                {logs.map((l)=>(
-                  <li key={l.id} className="list-item list-item-card">
-                    <div>
-                      <strong>{l.action}</strong>
-                      <p className="small">{l.description}</p>
-                      <p className="small">{l.user_name || "Sistema"} · {new Date(l.created_at).toLocaleString()}</p>
-                    </div>
-                  </li>
-                ))}
-                {logs.length===0 && <p className="empty">Sin registros.</p>}
-              </ul>
-            </>
-          )}
-        </main>
-      </div>
-
-      {/* Modal Elección */}
-      {electionModal && (
-        <Modal onClose={()=>setElectionModal(null)} title={electionModal.mode==="create"?"Nueva Votación":"Editar Votación"}>
-          <ElectionForm
-            initial={electionModal.values}
-            onCancel={()=>setElectionModal(null)}
-            onSubmit={saveElection}
-          />
-        </Modal>
+          <ul className="list">
+            {elections.map((e) => (
+              <li key={e.id} className="list-item list-item-card">
+                <div>
+                  <span className={`chip status-${e.status}`}>{e.status}</span>{" "}
+                  <strong>{e.title}</strong>
+                  <div className="small">{e.description}</div>
+                  <div className="small">Inicio: {e.start_date} • Fin: {e.end_date}</div>
+                </div>
+                <div style={{ display: "flex", gap: ".4rem" }}>
+                  <button className="btn-outline" onClick={() => setModalElection({ mode: "edit", data: e })}>Editar</button>
+                  <button className="btn-outline" onClick={() => removeElection(e.id)}>Eliminar</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
-      {/* Modal Candidato */}
-      {candidateModal && (
-        <Modal onClose={()=>setCandidateModal(null)} title={candidateModal.mode==="create"?"Nuevo Candidato":"Editar Candidato"}>
-          <CandidateForm
-            initial={candidateModal.values}
-            onCancel={()=>setCandidateModal(null)}
-            onSubmit={saveCandidate}
-          />
-        </Modal>
+      {tab === "candidates" && (
+        <>
+          <div className="dashboard-header">
+            <div>
+              <h3 className="section-title">Gestión de Candidatos</h3>
+              <p className="section-subtitle">Administra los candidatos del sistema</p>
+            </div>
+            <button className="btn-primary" onClick={() => setModalCandidate({ mode: "create", data: {} })}>
+              Nuevo Candidato
+            </button>
+          </div>
+
+          <div className="grid">
+            {candidates.map((c) => (
+              <div key={c.id} className="candidate-card">
+                <div className="candidate-photo"><img src={c.photo_url || "/vite.svg"} alt={c.name} /></div>
+                <strong>{c.name}</strong>
+                <p className="small" style={{ margin: ".2rem 0" }}>{c.party || "Independiente"}</p>
+                <p className="small" style={{ opacity: .85 }}>{c.bio}</p>
+                <div style={{ display: "flex", gap: ".4rem", marginTop: ".5rem" }}>
+                  <button className="btn-outline" onClick={() => setModalCandidate({ mode: "edit", data: c })}>Editar</button>
+                  <button className="btn-outline" onClick={() => removeCandidate(c.id)}>Eliminar</button>
+                </div>
+                <p className="small" style={{ opacity: .7, marginTop: ".4rem" }}>
+                  Elección: {c.election_title || c.election_id}
+                </p>
+              </div>
+            ))}
+          </div>
+        </>
       )}
-    </div>
-  );
-}
 
-/* ---------- UI Helpers (modales + forms) ---------- */
-function Modal({ children, onClose, title }) {
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e)=>e.stopPropagation()}>
-        <h3 className="section-title">{title}</h3>
-        {children}
-      </div>
-    </div>
-  );
-}
+      {tab === "users" && (
+        <>
+          <h3 className="section-title">Gestión de Usuarios</h3>
+          <table className="table">
+            <thead>
+              <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Vigente</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id}>
+                  <td>{u.name}</td>
+                  <td>{u.email}</td>
+                  <td>{u.role}</td>
+                  <td>{u.active ? "Activo" : "Inactivo"}</td>
+                  <td>
+                    <button className="btn-outline" onClick={() => toggleUser(u)}>
+                      {u.active ? "Desactivar" : "Activar"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
 
-function ElectionForm({ initial, onSubmit, onCancel }) {
-  const [form, setForm] = useState({ ...initial });
-  function set(k, v) { setForm((f)=>({ ...f, [k]: v })); }
+      {tab === "audit" && (
+        <>
+          <h3 className="section-title">Registro de Auditoría</h3>
+          <ul className="list">
+            {audit.map((a) => (
+              <li key={a.id} className="list-item list-item-card">
+                <div>
+                  <strong>{a.action}</strong>
+                  <div className="small">{a.description}</div>
+                </div>
+                <div className="small" style={{ textAlign: "right" }}>
+                  <div>{a.user_name || "Sistema"}</div>
+                  <div>{new Date(a.created_at).toLocaleString()}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
-  return (
-    <form className="form" onSubmit={(e)=>{ e.preventDefault(); onSubmit(form); }}>
-      <label className="label">Título
-        <input className="input" value={form.title} onChange={(e)=>set("title", e.target.value)} required/>
-      </label>
-      <label className="label">Descripción
-        <textarea className="input" style={{height:90}} value={form.description} onChange={(e)=>set("description", e.target.value)} />
-      </label>
-      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:12}}>
-        <label className="label">Fecha inicio
-          <input className="input" type="date" value={form.start_date?.slice(0,10) || ""} onChange={(e)=>set("start_date", e.target.value)} required/>
-        </label>
-        <label className="label">Fecha fin
-          <input className="input" type="date" value={form.end_date?.slice(0,10) || ""} onChange={(e)=>set("end_date", e.target.value)} required/>
-        </label>
-      </div>
-      <label className="label">Estado
-        <select className="input" value={form.status} onChange={(e)=>set("status", e.target.value)}>
-          <option>Programada</option>
-          <option>Activa</option>
-          <option>Finalizada</option>
-        </select>
-      </label>
-      <div style={{display:"flex", gap:12}}>
-        <button type="button" className="btn-outline" onClick={onCancel}>Cancelar</button>
-        <button className="btn-primary" type="submit">Guardar</button>
-      </div>
-    </form>
-  );
-}
+      {/* MODALES */}
+      {modalElection && (
+        <div className="modal-backdrop" onClick={() => setModalElection(null)}>
+          <form className="modal" onSubmit={submitElection} onClick={(e) => e.stopPropagation()}>
+            <h4 style={{ marginTop: 0 }}>{modalElection.mode === "create" ? "Nueva Votación" : "Editar Votación"}</h4>
+            <input className="input" name="title" placeholder="Título" defaultValue={modalElection?.data?.title || ""} required />
+            <input className="input" name="description" placeholder="Descripción" defaultValue={modalElection?.data?.description || ""} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: ".6rem" }}>
+              <input className="input" type="date" name="start_date" defaultValue={modalElection?.data?.start_date || ""} required />
+              <input className="input" type="date" name="end_date" defaultValue={modalElection?.data?.end_date || ""} required />
+            </div>
+            <select className="input" name="status" defaultValue={modalElection?.data?.status || "Programada"}>
+              <option>Activa</option>
+              <option>Programada</option>
+              <option>Finalizada</option>
+            </select>
+            <div style={{ display: "flex", gap: ".5rem", marginTop: ".4rem" }}>
+              <button type="button" className="btn-outline" onClick={() => setModalElection(null)}>Cancelar</button>
+              <button className="btn-primary">{modalElection.mode === "create" ? "Crear" : "Actualizar"}</button>
+            </div>
+          </form>
+        </div>
+      )}
 
-function CandidateForm({ initial, onSubmit, onCancel }) {
-  const [form, setForm] = useState({ ...initial });
-  function set(k, v) { setForm((f)=>({ ...f, [k]: v })); }
-
-  return (
-    <form className="form" onSubmit={(e)=>{ e.preventDefault(); onSubmit(form); }}>
-      <label className="label">Elección (ID)
-        <input className="input" value={form.election_id} onChange={(e)=>set("election_id", e.target.value)} required/>
-      </label>
-      <label className="label">Nombre
-        <input className="input" value={form.name} onChange={(e)=>set("name", e.target.value)} required/>
-      </label>
-      <label className="label">Partido
-        <input className="input" value={form.party} onChange={(e)=>set("party", e.target.value)} />
-      </label>
-      <label className="label">Biografía
-        <textarea className="input" style={{height:90}} value={form.bio} onChange={(e)=>set("bio", e.target.value)} />
-      </label>
-      <label className="label">URL de foto
-        <input className="input" value={form.photo_url} onChange={(e)=>set("photo_url", e.target.value)} />
-      </label>
-      <div style={{display:"flex", gap:12}}>
-        <button type="button" className="btn-outline" onClick={onCancel}>Cancelar</button>
-        <button className="btn-primary" type="submit">Guardar</button>
-      </div>
-    </form>
+      {modalCandidate && (
+        <div className="modal-backdrop" onClick={() => setModalCandidate(null)}>
+          <form className="modal" onSubmit={submitCandidate} onClick={(e) => e.stopPropagation()}>
+            <h4 style={{ marginTop: 0 }}>{modalCandidate.mode === "create" ? "Nuevo Candidato" : "Editar Candidato"}</h4>
+            <select className="input" name="election_id" defaultValue={modalCandidate?.data?.election_id || ""} required>
+              <option value="" disabled>Selecciona elección</option>
+              {elections.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}
+            </select>
+            <input className="input" name="name" placeholder="Nombre" defaultValue={modalCandidate?.data?.name || ""} required />
+            <input className="input" name="party" placeholder="Partido/Movimiento" defaultValue={modalCandidate?.data?.party || ""} />
+            <input className="input" name="photo_url" placeholder="URL Foto" defaultValue={modalCandidate?.data?.photo_url || ""} />
+            <textarea className="input" name="bio" placeholder="Biografía" defaultValue={modalCandidate?.data?.bio || ""} rows={3} />
+            <div style={{ display: "flex", gap: ".5rem", marginTop: ".4rem" }}>
+              <button type="button" className="btn-outline" onClick={() => setModalCandidate(null)}>Cancelar</button>
+              <button className="btn-primary">{modalCandidate.mode === "create" ? "Crear" : "Actualizar"}</button>
+            </div>
+          </form>
+        </div>
+      )}
+    </MainLayout>
   );
 }
