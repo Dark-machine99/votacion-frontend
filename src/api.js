@@ -1,6 +1,7 @@
-const API_URL = "http://localhost:4000/api";
+// src/api.js
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
 
-export async function apiRequest(path, options = {}) {
+async function apiRequest(path, options = {}) {
   const token = localStorage.getItem("token");
   const headers = {
     "Content-Type": "application/json",
@@ -8,54 +9,81 @@ export async function apiRequest(path, options = {}) {
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  });
-
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(error.message || "Error en la petición");
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const text = await res.text();
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { message: text || "Respuesta no JSON" };
   }
-
-  return res.json();
+  if (!res.ok) {
+    throw new Error(data.message || "Error en la petición");
+  }
+  return data;
 }
 
-export function login(email, password) {
-  return apiRequest("/auth/login", {
+/* ---------- Auth ---------- */
+export const login = (email, password) =>
+  apiRequest("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
-}
 
-export function getVoterElections() {
-  return apiRequest("/voter/elections");
-}
+export const registerVoter = (name, email, password) =>
+  apiRequest("/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ name, email, password }),
+  });
 
-export function getVoterHistory() {
-  return apiRequest("/voter/history");
-}
+/* ---------- Votante ---------- */
+export const getVoterElections = () => apiRequest("/voter/elections");
+export const getElectionDetail = (id) =>
+  apiRequest(`/voter/elections/${id}`);
+export const voteInElection = (electionId, candidateId) =>
+  apiRequest(`/voter/elections/${electionId}/vote`, {
+    method: "POST",
+    body: JSON.stringify({ candidateId }),
+  });
+export const getVoterHistory = () => apiRequest("/voter/history");
+export const getVoterPlaces = () => apiRequest("/voter/places");
 
-export function getVoterPlaces() {
-  return apiRequest("/voter/places");
-}
+/* ---------- Admin ---------- */
+export const getAdminDashboard = () => apiRequest("/admin/dashboard");
+export const getAdminElections = () => apiRequest("/admin/elections");
+export const createElection = (payload) =>
+  apiRequest("/admin/elections/create", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+export const updateElection = (id, payload) =>
+  apiRequest(`/admin/elections/update/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+export const deleteElection = (id) =>
+  apiRequest(`/admin/elections/delete/${id}`, { method: "DELETE" });
 
-export function getAdminDashboard() {
-  return apiRequest("/admin/dashboard");
-}
+export const getAdminCandidates = () => apiRequest("/admin/candidates");
+export const createCandidate = (payload) =>
+  apiRequest("/admin/candidates/create", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+export const updateCandidate = (id, payload) =>
+  apiRequest(`/admin/candidates/update/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+export const deleteCandidate = (id) =>
+  apiRequest(`/admin/candidates/delete/${id}`, { method: "DELETE" });
 
-export function getAdminElections() {
-  return apiRequest("/admin/elections");
-}
+export const getAdminUsers = () => apiRequest("/admin/users");
+export const getAdminAudit = () => apiRequest("/admin/audit");
 
-export function getAdminCandidates() {
-  return apiRequest("/admin/candidates");
-}
-
-export function getAdminUsers() {
-  return apiRequest("/admin/users");
-}
-
-export function getAdminAudit() {
-  return apiRequest("/admin/audit");
-}
+/* ---------- Admin: crear admin ---------- */
+export const createAdminUser = (name, email, password) =>
+  apiRequest("/admin/create-admin", {
+    method: "POST",
+    body: JSON.stringify({ name, email, password }),
+  });

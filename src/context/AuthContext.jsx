@@ -1,3 +1,4 @@
+// src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
 import { login as loginApi } from "../api";
 
@@ -7,10 +8,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("user");
-    if (saved) {
-      setUser(JSON.parse(saved));
-    }
+    const raw = localStorage.getItem("user");
+    if (raw) setUser(JSON.parse(raw));
   }, []);
 
   function logout() {
@@ -27,7 +26,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   );
