@@ -7,23 +7,36 @@ import { useAuth } from "./context/AuthContext";
 
 function PrivateRoute({ children, role }) {
   const { user } = useAuth();
+
+  // No autenticado
   if (!user) return <Navigate to="/" replace />;
-  if (role && user.role !== role) return <Navigate to="/votar" replace />;
+
+  // Ruta requiere rol específico
+  if (role && user.role !== role) {
+    // Redirección correcta según el tipo de usuario
+    return <Navigate to={user.role === "admin" ? "/admin" : "/votar"} replace />;
+  }
+
   return children;
 }
 
 export default function App() {
   return (
     <Routes>
+      {/* Login */}
       <Route path="/" element={<Login />} />
+
+      {/* Panel votante */}
       <Route
         path="/votar"
         element={
-          <PrivateRoute>
+          <PrivateRoute role="voter">
             <VoterDashboard />
           </PrivateRoute>
         }
       />
+
+      {/* Panel admin */}
       <Route
         path="/admin"
         element={
@@ -32,7 +45,9 @@ export default function App() {
           </PrivateRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/" />} />
+
+      {/* Default */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
