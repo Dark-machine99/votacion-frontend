@@ -1,5 +1,5 @@
 // src/router/AppRouter.jsx
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "../pages/Login";
 import AdminDashboard from "../pages/AdminDashboard";
@@ -11,37 +11,37 @@ import VoterRoute from "./VoterRoute";
 
 export default function AppRouter() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <Routes>
+      {/* Login */}
+      <Route path="/" element={<Login />} />
 
-        {/* Login */}
-        <Route path="/" element={<Login />} />
+      {/* Panel Admin */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          </ProtectedRoute>
+        }
+      />
 
-        {/* Panel Admin */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            </ProtectedRoute>
-          }
-        />
+      {/* Panel Votante */}
+      <Route
+        path="/voter"
+        element=
+        {
+          <ProtectedRoute>
+            <VoterRoute>
+              <VoterDashboard />
+            </VoterRoute>
+          </ProtectedRoute>
+        }
+      />
 
-        {/* Panel Votante */}
-        <Route
-          path="/voter"
-          element={
-            <ProtectedRoute>
-              <VoterRoute>
-                <VoterDashboard />
-              </VoterRoute>
-            </ProtectedRoute>
-          }
-        />
-
-      </Routes>
-    </BrowserRouter>
+      {/* 404 -> Login */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
